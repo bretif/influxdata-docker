@@ -1,5 +1,9 @@
 FROM buildpack-deps:stretch-curl
 
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends snmp && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN set -ex && \
     for key in \
         05CE15085FC09D18E99EFB22684A14CF2582E0C5 ; \
@@ -9,7 +13,7 @@ RUN set -ex && \
         gpg --keyserver keyserver.pgp.com --recv-keys "$key" ; \
     done
 
-ENV KAPACITOR_VERSION 1.2.1
+ENV TELEGRAF_VERSION 1.4.0
 RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" && \
     case "${dpkgArch##*-}" in \
       amd64) ARCH='amd64';; \
@@ -18,17 +22,14 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" && \
       armel) ARCH='armel';; \
       *)     echo "Unsupported architecture: ${dpkgArch}"; exit 1;; \
     esac && \
-    wget -q https://dl.influxdata.com/kapacitor/releases/kapacitor_${KAPACITOR_VERSION}_${ARCH}.deb.asc && \
-    wget -q https://dl.influxdata.com/kapacitor/releases/kapacitor_${KAPACITOR_VERSION}_${ARCH}.deb && \
-    gpg --batch --verify kapacitor_${KAPACITOR_VERSION}_${ARCH}.deb.asc kapacitor_${KAPACITOR_VERSION}_${ARCH}.deb && \
-    dpkg -i kapacitor_${KAPACITOR_VERSION}_${ARCH}.deb && \
-    rm -f kapacitor_${KAPACITOR_VERSION}_${ARCH}.deb*
-COPY kapacitor.conf /etc/kapacitor/kapacitor.conf
+    wget -q https://dl.influxdata.com/telegraf/releases/telegraf_${TELEGRAF_VERSION}-1_${ARCH}.deb.asc && \
+    wget -q https://dl.influxdata.com/telegraf/releases/telegraf_${TELEGRAF_VERSION}-1_${ARCH}.deb && \
+    gpg --batch --verify telegraf_${TELEGRAF_VERSION}-1_${ARCH}.deb.asc telegraf_${TELEGRAF_VERSION}-1_${ARCH}.deb && \
+    dpkg -i telegraf_${TELEGRAF_VERSION}-1_${ARCH}.deb && \
+    rm -f telegraf_${TELEGRAF_VERSION}-1_${ARCH}.deb*
 
-EXPOSE 9092
-
-VOLUME /var/lib/kapacitor
+EXPOSE 8125/udp 8092/udp 8094
 
 COPY entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["kapacitord"]
+CMD ["telegraf"]

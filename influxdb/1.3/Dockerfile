@@ -9,7 +9,7 @@ RUN set -ex && \
         gpg --keyserver keyserver.pgp.com --recv-keys "$key" ; \
     done
 
-ENV KAPACITOR_VERSION 1.2.1
+ENV INFLUXDB_VERSION 1.3.5
 RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" && \
     case "${dpkgArch##*-}" in \
       amd64) ARCH='amd64';; \
@@ -18,17 +18,18 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" && \
       armel) ARCH='armel';; \
       *)     echo "Unsupported architecture: ${dpkgArch}"; exit 1;; \
     esac && \
-    wget -q https://dl.influxdata.com/kapacitor/releases/kapacitor_${KAPACITOR_VERSION}_${ARCH}.deb.asc && \
-    wget -q https://dl.influxdata.com/kapacitor/releases/kapacitor_${KAPACITOR_VERSION}_${ARCH}.deb && \
-    gpg --batch --verify kapacitor_${KAPACITOR_VERSION}_${ARCH}.deb.asc kapacitor_${KAPACITOR_VERSION}_${ARCH}.deb && \
-    dpkg -i kapacitor_${KAPACITOR_VERSION}_${ARCH}.deb && \
-    rm -f kapacitor_${KAPACITOR_VERSION}_${ARCH}.deb*
-COPY kapacitor.conf /etc/kapacitor/kapacitor.conf
+    wget -q https://dl.influxdata.com/influxdb/releases/influxdb_${INFLUXDB_VERSION}_${ARCH}.deb.asc && \
+    wget -q https://dl.influxdata.com/influxdb/releases/influxdb_${INFLUXDB_VERSION}_${ARCH}.deb && \
+    gpg --batch --verify influxdb_${INFLUXDB_VERSION}_${ARCH}.deb.asc influxdb_${INFLUXDB_VERSION}_${ARCH}.deb && \
+    dpkg -i influxdb_${INFLUXDB_VERSION}_${ARCH}.deb && \
+    rm -f influxdb_${INFLUXDB_VERSION}_${ARCH}.deb*
+COPY influxdb.conf /etc/influxdb/influxdb.conf
 
-EXPOSE 9092
+EXPOSE 8086
 
-VOLUME /var/lib/kapacitor
+VOLUME /var/lib/influxdb
 
 COPY entrypoint.sh /entrypoint.sh
+COPY init-influxdb.sh /init-influxdb.sh
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["kapacitord"]
+CMD ["influxd"]
